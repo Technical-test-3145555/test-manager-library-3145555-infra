@@ -48,3 +48,34 @@ No hay prórroga: suban avances parciales con commits pequeños durante la prueb
 | [`test-manager-library-3145555-page`](https://github.com/code-sena/test-manager-library-3145555-page) | Sitio público estático de presentación |
 | [`test-manager-library-3145555-infra`](https://github.com/code-sena/test-manager-library-3145555-infra) | Contenedores, red, volúmenes y motor de base de datos vacío |
 | [`test-manager-library-3145555-tool`](https://github.com/code-sena/test-manager-library-3145555-tool) | Utilidades: sembrador de datos de demostración |
+
+## Cómo se levanta
+
+Requisitos: Docker con Compose v2. Los repositorios `api` y `app` deben estar clonados junto a este (misma carpeta padre), o definir `API_CONTEXT` y `APP_CONTEXT` en `.env`.
+
+```bash
+cp .env.example .env     # cambiar todos los valores "change-me"
+docker compose up -d     # un solo comando: motor, API y frontend
+```
+
+| Servicio | Qué es | Puerto por defecto |
+|---|---|---|
+| `db` | PostgreSQL 16 **vacío**, zona horaria UTC, volumen `library_pgdata` | 5432 |
+| `api` | Backend Laravel (se construye desde el repo `api`) | 8080 |
+| `app` | Frontend React (se construye desde el repo `app`) | 5173 |
+
+La base arranca **sin tablas**. El esquema `library`, las tablas y las cinco categorías las crean las migraciones de `api` (ADR-001, artículo V de la constitución). Este repositorio no contiene `CREATE TABLE`:
+
+```bash
+sh scripts/check-no-ddl.sh
+```
+
+Para comprobar que el motor arranca vacío:
+
+```bash
+docker compose up -d db
+docker compose exec db psql -U library -d library -tAc "select count(*) from information_schema.tables where table_schema not in ('pg_catalog','information_schema')"
+# 0
+```
+
+Para borrar todo, incluidos los datos: `docker compose down -v`.
